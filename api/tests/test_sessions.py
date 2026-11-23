@@ -45,7 +45,7 @@ def clean_counters(db):
 def make_user(db, phone, role="victim"):
     """Put a ready, active account straight into the database (quicker than signing up)."""
     db.users.insert_one({
-        "name_en": "Test Person", "phone": phone, "email": f"{phone[-6:]}@example.com",
+        "name_en": "Test Person", "phone": phone,
         "password_hash": hash_password(PASSWORD), "role": role, "status": "active",
         "failed_logins": 0, "locked_until": None, "created_at": datetime.now(timezone.utc),
     })
@@ -157,7 +157,7 @@ def test_attack_from_many_devices_locks_the_whole_account(db, monkeypatch, capsy
     response = log_in(TestClient(app), "+8801911000007")
     assert response.status_code == 423
     assert response.json()["error"]["code"] == "account_locked"
-    assert "[SafeZone notice]" in capsys.readouterr().out  # the owner was told
+    assert "[SafeZone SMS]" in capsys.readouterr().out  # the owner was told
 
 
 def test_too_many_logins_from_one_device_per_minute(db):
@@ -190,3 +190,25 @@ def test_only_staff_may_pass_a_staff_door(db):
     assert TestClient(practice).get("/staff-only").status_code == 401  # nobody logged in
     assert door(victim).status_code == 403  # logged in, wrong role
     assert door(verifier).json() == {"hello": "verifier"}  # staff may pass
+
+
+# ------------------------------------------------------------------ "Remember me" (Task 10)
+def test_remember_me_off_gives_cookies_that_end_with_the_browser(db):
+    make_user(db, "+8801911000010")
+    client = TestClient(app)
+    response = client.post("/api/v1/auth/login", headers=SAFE,
+                           json={"phone": "+8801911000010", "password": PASSWORD, "remember": False})
+    assert response.status_code == 200
+    cookies = " ".join(response.headers.get_list("set-cookie")).lower()
+    assert "max-age" not in cookies and "expires" not in cookies  # session cookies
+
+    # Renewing the tickets keeps them as session cookies
+    renewed = client.post("/api/v1/auth/refresh", headers=SAFE)
+    assert "max-age" not in " ".join(renewed.headers.get_list("set-cookie")).lower()
+
+
+def test_remember_me_on_keeps_you_logged_in_for_7_days(db):
+    make_user(db, "+8801911000011")
+    response = TestClient(app).post("/api/v1/auth/login", headers=SAFE,
+                                    json={"phone": "+8801911000011", "password": PASSWORD, "remember": True})
+    assert "max-age=604800" in " ".join(response.headers.get_list("set-cookie")).lower()  # 7 days

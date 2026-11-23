@@ -38,16 +38,16 @@ def fresh_limits(db):
     db["rate_counters"].delete_many({})
 
 
-def sign_up(client, capsys, phone, email, password="safe-pass-123"):
+def sign_up(client, capsys, phone, password="safe-pass-123"):
     """Sign up and return the 6-digit code that was printed in the backend window."""
     capsys.readouterr()  # forget older output
-    body = {"name_en": "Karim Ahmed", "phone": phone, "email": email, "password": password}
+    body = {"name_en": "Karim Ahmed", "phone": phone, "password": password}
     assert client.post("/api/v1/auth/register", json=body, headers=SAFE).status_code == 201
-    return re.search(r"-> (\d{6})", capsys.readouterr().out).group(1)
+    return re.search(r"code: (\d{6})", capsys.readouterr().out).group(1)
 
 
-def confirm(client, email, code):
-    return client.post("/api/v1/auth/verify-otp", json={"email": email, "code": code}, headers=SAFE)
+def confirm(client, phone, code):
+    return client.post("/api/v1/auth/verify-otp", json={"phone": phone, "code": code}, headers=SAFE)
 
 
 def wrong(code: str) -> str:
@@ -57,33 +57,34 @@ def wrong(code: str) -> str:
 
 def test_full_journey_sign_up_confirm_then_who_am_i(db, capsys):
     client = TestClient(app)
-    code = sign_up(client, capsys, "01711110001", "journey@example.com")
+    code = sign_up(client, capsys, "01711110001")
 
     # Not logged in yet
     assert client.get("/api/v1/me").status_code == 401
 
     # A wrong code first
-    bad = confirm(client, "journey@example.com", wrong(code))
+    bad = confirm(client, "01711110001", wrong(code))
     assert bad.status_code == 400
     assert bad.json()["error"]["code"] == "wrong_code"
     assert "4 tries left" in bad.json()["error"]["message"]
 
     # The right code: account confirmed and logged in
-    good = confirm(client, "journey@example.com", code)
+    good = confirm(client, "01711110001", code)
     assert good.status_code == 200
     assert good.json()["user"]["status"] == "active"
     assert ACCESS_COOKIE in client.cookies and REFRESH_COOKIE in client.cookies
 
     me = client.get("/api/v1/me")
     assert me.status_code == 200
-    assert me.json()["email"] == "journey@example.com"
+    assert me.json()["phone"] == "+8801711110001"
+    assert "email" not in me.json()  # accounts have no email: codes go to the phone
     assert "password_hash" not in me.json()  # the hash never leaves the backend
 
 
 def test_log_in_with_phone_and_password(db, capsys):
     setup = TestClient(app)
-    code = sign_up(setup, capsys, "01711110002", "login@example.com")
-    confirm(setup, "login@example.com", code)
+    code = sign_up(setup, capsys, "01711110002")
+    confirm(setup, "01711110002", code)
 
     client = TestClient(app)  # a fresh browser
     response = client.post("/api/v1/auth/login", json={"phone": "+880 1711-110002", "password": "safe-pass-123"},
@@ -95,7 +96,7 @@ def test_log_in_with_phone_and_password(db, capsys):
 
 def test_wrong_password_and_unknown_phone_look_the_same(db, capsys):
     setup = TestClient(app)
-    confirm(setup, "same@example.com", sign_up(setup, capsys, "01711110003", "same@example.com"))
+    confirm(setup, "01711110003", sign_up(setup, capsys, "01711110003"))
 
     client = TestClient(app)
     wrong_password = client.post("/api/v1/auth/login", json={"phone": "01711110003", "password": "nope-123"},
@@ -108,7 +109,7 @@ def test_wrong_password_and_unknown_phone_look_the_same(db, capsys):
 
 def test_unconfirmed_account_cannot_log_in(db, capsys):
     client = TestClient(app)
-    sign_up(client, capsys, "01711110004", "waiting@example.com")
+    sign_up(client, capsys, "01711110004")
     response = client.post("/api/v1/auth/login", json={"phone": "01711110004", "password": "safe-pass-123"},
                            headers=SAFE)
     assert response.status_code == 403
@@ -117,27 +118,27 @@ def test_unconfirmed_account_cannot_log_in(db, capsys):
 
 def test_five_wrong_tries_end_the_code(db, capsys):
     client = TestClient(app)
-    code = sign_up(client, capsys, "01711110005", "guess@example.com")
+    code = sign_up(client, capsys, "01711110005")
     for _ in range(5):
-        confirm(client, "guess@example.com", wrong(code))
+        confirm(client, "01711110005", wrong(code))
     # Even the right code no longer works: a new one is needed
-    late = confirm(client, "guess@example.com", code)
+    late = confirm(client, "01711110005", code)
     assert late.status_code == 400
     assert late.json()["error"]["code"] == "code_invalid"
 
 
 def test_confirming_twice_is_refused(db, capsys):
     client = TestClient(app)
-    code = sign_up(client, capsys, "01711110006", "twice@example.com")
-    assert confirm(client, "twice@example.com", code).status_code == 200
-    again = confirm(client, "twice@example.com", code)
+    code = sign_up(client, capsys, "01711110006")
+    assert confirm(client, "01711110006", code).status_code == 200
+    again = confirm(client, "01711110006", code)
     assert again.status_code == 409
     assert again.json()["error"]["code"] == "already_verified"
 
 
 def test_cookies_are_safe_and_only_a_hash_is_saved(db, capsys):
     client = TestClient(app)
-    response = confirm(client, "cookie@example.com", sign_up(client, capsys, "01711110007", "cookie@example.com"))
+    response = confirm(client, "01711110007", sign_up(client, capsys, "01711110007"))
     set_cookie = " ".join(response.headers.get_list("set-cookie")).lower()
     assert "httponly" in set_cookie  # JavaScript cannot read the tickets
     assert "samesite=lax" in set_cookie
@@ -150,8 +151,8 @@ def test_cookies_are_safe_and_only_a_hash_is_saved(db, capsys):
 
 def test_fake_or_expired_tickets_are_refused(db, capsys, monkeypatch):
     client = TestClient(app)
-    confirm(client, "ticket@example.com", sign_up(client, capsys, "01711110008", "ticket@example.com"))
-    user = db.users.find_one({"email": "ticket@example.com"})
+    confirm(client, "01711110008", sign_up(client, capsys, "01711110008"))
+    user = db.users.find_one({"phone": "+8801711110008"})
 
     tampered = TestClient(app, cookies={ACCESS_COOKIE: client.cookies[ACCESS_COOKIE] + "x"})
     assert tampered.get("/api/v1/me").status_code == 401
@@ -163,7 +164,7 @@ def test_fake_or_expired_tickets_are_refused(db, capsys, monkeypatch):
 
 def test_suspended_user_is_logged_out_at_once(db, capsys):
     client = TestClient(app)
-    confirm(client, "stop@example.com", sign_up(client, capsys, "01711110009", "stop@example.com"))
+    confirm(client, "01711110009", sign_up(client, capsys, "01711110009"))
     assert client.get("/api/v1/me").status_code == 200
-    db.users.update_one({"email": "stop@example.com"}, {"$set": {"status": "suspended"}})
+    db.users.update_one({"phone": "+8801711110009"}, {"$set": {"status": "suspended"}})
     assert client.get("/api/v1/me").status_code == 401
