@@ -4,6 +4,8 @@ main.py - the starting point of the SafeZone backend.
 The server program (uvicorn) loads the `app` object from this file:
     uvicorn app.main:app --reload --port 8000
 """
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.docs import get_swagger_ui_html
@@ -12,6 +14,8 @@ from fastapi.responses import HTMLResponse
 from app.config import settings
 from app.db import database_status
 from app.errors import register_error_handlers
+from app.jobs import alert_worker
+from app.modules.alerts.routes import router as alerts_router
 from app.modules.areas.routes import router as areas_router
 from app.modules.auth.routes import router as auth_router
 from app.modules.reports.routes import router as reports_router
@@ -20,9 +24,18 @@ from app.modules.simulator.routes import router as simulator_router
 from app.modules.users.routes import router as users_router
 from app.security import csrf_header_check
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Runs when the server starts (before `yield`) and when it stops (after)."""
+    if settings.background_jobs:
+        alert_worker.start()  # Task 22: sends approved alerts
+    yield
+    alert_worker.stop()
+
+
 # Create the web application. The title and version appear on the /docs page.
 # docs_url=None: we serve our own /docs page (see the bottom of this file).
-app = FastAPI(title=settings.app_name, version="0.5.0", docs_url=None)
+app = FastAPI(title=settings.app_name, version="0.5.0", docs_url=None, lifespan=lifespan)
 
 # Every error comes back in the same shape: {"error": {"code", "message", "fields"}}
 register_error_handlers(app)
@@ -46,6 +59,7 @@ app.include_router(areas_router)  # /api/v1/areas, /api/v1/police-stations (Task
 app.include_router(reports_router)  # /api/v1/reports, /api/v1/me/reports (Task 14)
 app.include_router(review_router)  # /api/v1/review (Task 18, verifiers)
 app.include_router(simulator_router)  # /api/v1/admin/simulator (Task 21)
+app.include_router(alerts_router)  # /api/v1/admin/alerts (Task 22)
 
 
 @app.get("/api/v1/health")

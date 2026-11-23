@@ -8,3 +8,4 @@ write and delete freely without ever touching the real "safezone" data.
 import os
 
 os.environ["MONGODB_DB"] = "safezone_test"
+os.environ["BACKGROUND_JOBS"] = "false"  # tests run the alert job themselves (Task 22)
