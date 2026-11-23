@@ -59,6 +59,10 @@ class Settings(BaseSettings):
     account_lock_after: int = 50  # wrong passwords for one phone from ANYWHERE in 1 hour
     account_lock_minutes: int = 60  # -> lock the whole account for this long
 
+    # --- Areas (Task 12) ---
+    default_alert_radius_m: int = 1000  # how far an alert reaches, unless an area sets its own
+    area_data_file: str = "data/dhaka_areas.geojson"  # thanas, wards and police stations to load
+
     # Read values from the .env file in the folder where we start the server.
     model_config = SettingsConfigDict(env_file=".env")
 
