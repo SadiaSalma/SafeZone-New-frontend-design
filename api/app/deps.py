@@ -77,3 +77,11 @@ def require_roles(*roles: str):
         return user
 
     return check
+
+
+def get_optional_user(request: Request) -> dict | None:
+    """The logged-in user, or None for visitors (Task 23: anyone may follow an area)."""
+    try:
+        return get_current_user(request)
+    except AppError:
+        return None

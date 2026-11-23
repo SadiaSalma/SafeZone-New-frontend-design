@@ -83,6 +83,13 @@ class Settings(BaseSettings):
     tower_range_m: int = 1000  # how far one tower reaches
     simulator_seed: int = 42  # same seed -> same network every time (useful for demos and tests)
 
+    # --- Browser push notifications (Task 23) ---
+    vapid_public_key: str = ""  # made by scripts/make_vapid_keys.py (empty = push switched off)
+    vapid_private_key: str = ""  # SECRET: only in .env
+    vapid_subject: str = "mailto:safezone-team@example.com"  # a contact for push services (no personal address)
+    follow_areas_max: int = 10  # one browser can follow at most 10 areas
+    follow_test_alert_seconds: int = 5  # a TEST alert this many seconds after following a new area (0 = off)
+
     # --- Background jobs (Task 22) ---
     background_jobs: bool = True  # the alert worker; tests switch it off
 
