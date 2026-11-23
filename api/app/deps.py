@@ -23,12 +23,19 @@ ACCESS_COOKIE = "sz_access"
 REFRESH_COOKIE = "sz_refresh"
 
 
-def set_login_cookies(response: Response, tickets: dict) -> None:
-    """Put both tickets into secure cookies on the response."""
+def set_login_cookies(response: Response, tickets: dict, remember: bool = True) -> None:
+    """Put both tickets into secure cookies on the response.
+
+    remember=True  -> the cookies are kept for 7 days (stay logged in).
+    remember=False -> "session cookies": the browser deletes them when it closes
+                      ("Remember me" not ticked, e.g. on a shared computer).
+    """
     secure = settings.app_env != "development"  # on a real server: only over https
-    response.set_cookie(ACCESS_COOKIE, tickets["access"], max_age=settings.access_minutes * 60,
+    response.set_cookie(ACCESS_COOKIE, tickets["access"],
+                        max_age=settings.access_minutes * 60 if remember else None,
                         httponly=True, secure=secure, samesite="lax", path="/")
-    response.set_cookie(REFRESH_COOKIE, tickets["refresh"], max_age=settings.refresh_days * 24 * 3600,
+    response.set_cookie(REFRESH_COOKIE, tickets["refresh"],
+                        max_age=settings.refresh_days * 24 * 3600 if remember else None,
                         httponly=True, secure=secure, samesite="lax", path="/api/v1/auth")
 
 

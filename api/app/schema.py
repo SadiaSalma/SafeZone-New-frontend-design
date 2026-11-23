@@ -117,7 +117,8 @@ COLLECTIONS: dict[str, dict] = {
     "sessions": {
         "validator": rules(
             ["user_id", "token_hash", "expires_at"],
-            {"user_id": ID, "token_hash": STRING, "expires_at": DATE, "revoked_at": DATE_OR_NULL, "user_agent": STRING},
+            {"user_id": ID, "token_hash": STRING, "expires_at": DATE, "revoked_at": DATE_OR_NULL, "user_agent": STRING,
+             "remember": BOOL},
         ),
         "indexes": [
             ({"token_hash": 1}, {"unique": True, "name": "token_unique"}),
