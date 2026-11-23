@@ -12,14 +12,6 @@ from pymongo import ReturnDocument
 from app.db import get_db
 
 
-def find_users_with_phone_or_email(phone: str, email: str) -> list[dict]:
-    return list(get_db()["users"].find({"$or": [{"phone": phone}, {"email": email}]}, {"phone": 1, "email": 1}))
-
-
-def find_user_by_email(email: str) -> dict | None:
-    return get_db()["users"].find_one({"email": email})
-
-
 def insert_user(user: dict, session=None) -> ObjectId:
     return get_db()["users"].insert_one(user, session=session).inserted_id
 
@@ -62,16 +54,17 @@ def mark_code_used(code_id: ObjectId, now: datetime, session=None) -> None:
 def activate_user(user_id: ObjectId, now: datetime, session=None) -> None:
     get_db()["users"].update_one(
         {"_id": user_id, "status": "pending_verify"},
-        {"$set": {"status": "active", "email_verified_at": now}},
+        {"$set": {"status": "active", "phone_verified_at": now}},
         session=session,
     )
 
 
-def insert_session(user_id: ObjectId, token_hash: str, expires_at: datetime, user_agent: str) -> None:
+def insert_session(user_id: ObjectId, token_hash: str, expires_at: datetime, user_agent: str,
+                   remember: bool = True) -> None:
     """Save the long ticket (only its hash) so it can be checked and cancelled later."""
     get_db()["sessions"].insert_one(
         {"user_id": user_id, "token_hash": token_hash, "expires_at": expires_at,
-         "revoked_at": None, "user_agent": user_agent[:300]}
+         "revoked_at": None, "user_agent": user_agent[:300], "remember": remember}
     )
 
 
@@ -124,3 +117,18 @@ def insert_code(target: str, channel: str, purpose: str, code_hash: str, expires
             "created_at": now,
         }
     )
+
+
+# ---------------------------------------------------------------- password reset (Task 11)
+def set_password(user_id: ObjectId, password_hash: str, session=None) -> None:
+    """Save a new password hash and lift any account lock."""
+    get_db()["users"].update_one(
+        {"_id": user_id},
+        {"$set": {"password_hash": password_hash, "locked_until": None, "failed_logins": 0}},
+        session=session,
+    )
+
+
+def clear_all_failures(phone: str) -> None:
+    """Forget every wrong-password record for this phone (from all devices)."""
+    get_db()["login_attempts"].delete_many({"phone": phone})
