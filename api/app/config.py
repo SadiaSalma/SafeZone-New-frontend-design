@@ -83,6 +83,9 @@ class Settings(BaseSettings):
     tower_range_m: int = 1000  # how far one tower reaches
     simulator_seed: int = 42  # same seed -> same network every time (useful for demos and tests)
 
+    # --- Background jobs (Task 22) ---
+    background_jobs: bool = True  # the alert worker; tests switch it off
+
     # Read values from the .env file in the folder where we start the server.
     model_config = SettingsConfigDict(env_file=".env")
 
