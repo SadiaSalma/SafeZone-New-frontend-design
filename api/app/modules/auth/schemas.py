@@ -8,7 +8,7 @@ If something is wrong, the person gets a clear message for that field
 import re
 from typing import Literal
 
-from pydantic import BaseModel, EmailStr, Field, field_validator
+from pydantic import BaseModel, Field, field_validator
 
 # Bangladeshi mobile numbers: 01 + operator digit 3-9 + 8 digits (11 digits in total)
 LOCAL_MOBILE = re.compile(r"^01[3-9]\d{8}$")
@@ -25,12 +25,11 @@ def normalize_phone(raw: str) -> str:
 
 
 class RegisterIn(BaseModel):
-    """What the sign-up form sends (FR-1, with email from revision R1)."""
+    """What the sign-up form sends (FR-1). The 6-digit code goes to this mobile number by SMS."""
 
     name_en: str = Field(min_length=2, max_length=80, examples=["Rahim Uddin"])
     name_bn: str | None = Field(default=None, max_length=80, examples=["রহিম উদ্দিন"])
     phone: str = Field(examples=["01712345678"])
-    email: EmailStr = Field(examples=["rahim@example.com"])
     password: str = Field(min_length=8, max_length=128, examples=["safe-pass-123"])
 
     @field_validator("name_en", "name_bn")
@@ -43,17 +42,46 @@ class RegisterIn(BaseModel):
     def check_phone(cls, value: str) -> str:
         return normalize_phone(value)
 
-    @field_validator("email")
-    @classmethod
-    def lowercase_email(cls, value: str) -> str:
-        return value.lower()
-
     @field_validator("password")
     @classmethod
     def strong_enough(cls, value: str) -> str:
-        if not (re.search(r"[A-Za-z]", value) and re.search(r"\d", value)):
-            raise ValueError("Use at least one letter and one number.")
-        return value
+        return check_password_strength(value)
+
+
+def check_password_strength(value: str) -> str:
+    """The password rule, shared by sign-up, password reset and create_admin."""
+    if not (re.search(r"[A-Za-z]", value) and re.search(r"\d", value)):
+        raise ValueError("Use at least one letter and one number.")
+    return value
+
+
+class ResetRequestIn(BaseModel):
+    """Task 11 - step 1 of "forgot password": which account? (its mobile number)"""
+
+    phone: str = Field(examples=["01712345678"])
+
+    @field_validator("phone")
+    @classmethod
+    def check_phone(cls, value: str) -> str:
+        return normalize_phone(value)
+
+
+class ResetConfirmIn(BaseModel):
+    """Task 11 - step 2: the code from the SMS + the new password."""
+
+    phone: str = Field(examples=["01712345678"])
+    code: str = Field(pattern=r"^\d{6}$", examples=["123456"])
+    new_password: str = Field(min_length=8, max_length=128, examples=["new-pass-456"])
+
+    @field_validator("phone")
+    @classmethod
+    def check_phone(cls, value: str) -> str:
+        return normalize_phone(value)
+
+    @field_validator("new_password")
+    @classmethod
+    def strong_enough(cls, value: str) -> str:
+        return check_password_strength(value)
 
 
 class RegisterOut(BaseModel):
@@ -61,20 +89,20 @@ class RegisterOut(BaseModel):
 
     user_id: str
     status: str  # "pending_verify" until the code is confirmed (Task 8)
-    code_sent_to: str  # masked, e.g. "r****@example.com"
+    code_sent_to: str  # masked, e.g. "017*****678"
     channel: str  # how the code was delivered
     demo_code: str | None = None  # only filled in demo_screen mode
     message: str
 
 
 class ResendIn(BaseModel):
-    email: EmailStr
+    phone: str = Field(examples=["01712345678"])
     purpose: Literal["register"] = "register"
 
-    @field_validator("email")
+    @field_validator("phone")
     @classmethod
-    def lowercase_email(cls, value: str) -> str:
-        return value.lower()
+    def check_phone(cls, value: str) -> str:
+        return normalize_phone(value)
 
 
 class MessageOut(BaseModel):
@@ -83,15 +111,15 @@ class MessageOut(BaseModel):
 
 
 class VerifyIn(BaseModel):
-    """The 6-digit code the person received after signing up."""
+    """The 6-digit code the person received by SMS after signing up."""
 
-    email: EmailStr = Field(examples=["rahim@example.com"])
+    phone: str = Field(examples=["01712345678"])
     code: str = Field(pattern=r"^\d{6}$", examples=["123456"])
 
-    @field_validator("email")
+    @field_validator("phone")
     @classmethod
-    def lowercase_email(cls, value: str) -> str:
-        return value.lower()
+    def check_phone(cls, value: str) -> str:
+        return normalize_phone(value)
 
 
 class LoginIn(BaseModel):
@@ -99,6 +127,7 @@ class LoginIn(BaseModel):
 
     phone: str = Field(examples=["01712345678"])
     password: str = Field(min_length=1, max_length=128, examples=["safe-pass-123"])
+    remember: bool = True  # "Remember me": False = logged out when the browser closes
 
     @field_validator("phone")
     @classmethod
@@ -113,7 +142,6 @@ class UserOut(BaseModel):
     name_en: str
     name_bn: str
     phone: str
-    email: str
     role: str
     status: str
     nid_added: bool = False  # True once the person has added an NID
