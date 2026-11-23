@@ -68,6 +68,12 @@ class Settings(BaseSettings):
     reports_per_day: int = 5  # at most 5 reports in 24 hours per person
     gd_max_days_after_theft: int = 7  # a GD filed later than this gets a warning (Task 17)
 
+    # --- Photos (Task 16) ---
+    storage_dir: str = "storage"  # where uploaded photos are kept (inside api/, never uploaded to git)
+    photo_max_mb: int = 5  # biggest photo we accept
+    photo_max_side: int = 1600  # photos are shrunk so the longest side is at most this many pixels
+    item_photos_per_report: int = 3  # FR-8: up to 3 item photos (+ 1 GD copy)
+
     # Read values from the .env file in the folder where we start the server.
     model_config = SettingsConfigDict(env_file=".env")
 
