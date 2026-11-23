@@ -1,0 +1,28 @@
+Photos used by SafeZone (all from Unsplash, free under the Unsplash License, credited in the site footer).
+File                               Photographer (Unsplash username)
+auth-forgot-dhaka-shops-night.jpg  Tahsin Labib (@tahsinlabib_)
+areas-uttara-aerial-sunset.jpg     Serzill Hasan (@serzill)
+report-dhaka-night-road.jpg        Ashique Anan Abir (@abir89)
+myreports-rain-rickshaw.jpg        MeRaj Rudba (@rudba)
+review-police-traffic.jpg          Shohidul Alam (@casabombn)
+alerts-busy-night-street.jpg       Momen Rahman (@momen_rahman)
+map-dhaka-flyover.jpg              Khalid Bin Siraj (@perksofdcity)
+crime-dark-street-walk.jpg         Sabbir Ahamed (@ureca)
+area-dashboard-street-tower.jpg    Md. Ashraful Kabir (@ashraful_kabir)
+admin-lake-sunset.jpg              Tasin (@tsblhsn)
+simulator-colorful-bus.jpg         Kabiur Rahman Riyad (@riiyad)
+delete-busy-street-rickshaw.jpg    Md. Ashraful Kabir (@ashraful_kabir)
+(Earlier photos are credited in components/Footer.tsx.)
+admin-alerts-traffic-jam.jpg       Mahibul Hasan Fahim (@mahibul12345)
+admin-crime-night-street.jpg       Towfiq islam (@filmsbytowfiq)
+
+Theft pictures (supplied by the team; shown in components/home/TheftGallery.tsx):
+theft-night-mugging-clips.jpg       video stills of night muggings in Dhaka (news footage)
+theft-bike-machete-gang.jpg         cabl.gram, via Dhaka Tribune (bottom advert strip cut off)
+theft-motorbike-snatching-cctv.jpg  CCTV footage
+theft-shop-mugging-cctv.jpg         The Internet Today (CCTV footage)
+theft-robbery-gunpoint.jpg          illustration
+theft-pickpocket-wallet.jpg         stock photo
+theft-car-door.jpg                  stock photo
+theft-gallery-night.jpg             image of an art theft at night
+theft-park-phone-harassment.jpg     film still
