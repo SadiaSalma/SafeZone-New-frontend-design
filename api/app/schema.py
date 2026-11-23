@@ -228,7 +228,9 @@ COLLECTIONS: dict[str, dict] = {
     "report_photos": {
         "validator": rules(
             ["report_id", "storage_key", "size_bytes", "created_at"],
-            {"user_id": ID_OR_NULL, "report_id": ID, "storage_key": STRING, "size_bytes": WHOLE_NUMBER, "created_at": DATE},
+            {"user_id": ID_OR_NULL, "report_id": ID, "storage_key": STRING, "size_bytes": WHOLE_NUMBER, "created_at": DATE,
+             "kind": one_of("item", "gd_copy"),  # Task 16: a photo of a stolen item, or of the GD copy
+             "width": WHOLE_NUMBER, "height": WHOLE_NUMBER},
         ),
         "indexes": [({"report_id": 1}, {"name": "by_report"})],
     },
