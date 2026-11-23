@@ -16,6 +16,7 @@ from app.modules.areas.routes import router as areas_router
 from app.modules.auth.routes import router as auth_router
 from app.modules.reports.routes import router as reports_router
 from app.modules.review.routes import router as review_router
+from app.modules.simulator.routes import router as simulator_router
 from app.modules.users.routes import router as users_router
 from app.security import csrf_header_check
 
@@ -44,6 +45,7 @@ app.include_router(users_router)  # /api/v1/me
 app.include_router(areas_router)  # /api/v1/areas, /api/v1/police-stations (Task 12)
 app.include_router(reports_router)  # /api/v1/reports, /api/v1/me/reports (Task 14)
 app.include_router(review_router)  # /api/v1/review (Task 18, verifiers)
+app.include_router(simulator_router)  # /api/v1/admin/simulator (Task 21)
 
 
 @app.get("/api/v1/health")
