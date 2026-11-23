@@ -38,7 +38,6 @@ def a_user(**changes):
     user = {
         "name_en": "Rahim Uddin",
         "phone": "+8801712345678",
-        "email": "rahim@example.com",
         "password_hash": "argon2-hash-here",
         "role": "victim",
         "status": "active",
@@ -71,23 +70,37 @@ def test_running_setup_again_is_safe(db):
 
 
 def test_valid_user_is_accepted(db):
-    db.users.insert_one(a_user(phone="+8801700000001", email="ok@example.com"))
+    db.users.insert_one(a_user(phone="+8801700000001"))
 
 
 def test_unknown_role_is_refused(db):
     with pytest.raises(WriteError):
-        db.users.insert_one(a_user(role="boss", phone="+8801700000002", email="boss@example.com"))
+        db.users.insert_one(a_user(role="boss", phone="+8801700000002"))
 
 
 def test_wrong_phone_format_is_refused(db):
     with pytest.raises(WriteError):
-        db.users.insert_one(a_user(phone="01712345678", email="nophone@example.com"))  # missing +880
+        db.users.insert_one(a_user(phone="01712345678"))  # missing +880
 
 
 def test_same_phone_twice_is_refused(db):
-    db.users.insert_one(a_user(phone="+8801700000003", email="first@example.com"))
+    db.users.insert_one(a_user(phone="+8801700000003"))
     with pytest.raises(DuplicateKeyError):
-        db.users.insert_one(a_user(phone="+8801700000003", email="second@example.com"))
+        db.users.insert_one(a_user(phone="+8801700000003"))
+
+
+def test_an_older_database_loses_its_email_fields(db):
+    """Codes used to be emailed. Running the setup again removes the email index and email fields,
+    and keeps WHEN the account was confirmed (now phone_verified_at)."""
+    confirmed = NOW - timedelta(days=3)
+    db.users.create_index("email", unique=True, sparse=True, name="email_unique")
+    uid = db.users.insert_one(a_user(phone="+8801700000009", email="old@example.com",
+                                     email_verified_at=confirmed)).inserted_id
+    apply_schema(db)
+    user = db.users.find_one({"_id": uid})
+    assert "email" not in user and "email_verified_at" not in user
+    assert abs(user["phone_verified_at"].replace(tzinfo=timezone.utc) - confirmed) < timedelta(seconds=1)
+    assert "email_unique" not in db.users.index_information()
 
 
 def test_one_active_report_per_gd(db):

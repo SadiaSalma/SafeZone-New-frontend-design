@@ -13,7 +13,6 @@ pymongo>=4.8              # talks to MongoDB
 # --- Accounts and security (Tasks 7-9) ---
 pwdlib[argon2]>=0.2       # hashes passwords safely with Argon2
 pyjwt>=2.9                # creates and checks login tokens (JWT)
-email-validator>=2.2      # checks that an email address looks real
 
 # --- File uploads (Tasks 16, 29) ---
 python-multipart>=0.0.9   # lets FastAPI receive uploaded photos

@@ -1,10 +1,10 @@
 """
 ratelimit.py - stops people from doing something too many times (Design Revisions R9).
 
-Example: at most 3 codes per hour for one email address.
+Example: at most 3 codes per hour for one mobile number.
 
 How it works: a counter document per "key" in the rate_counters collection,
-e.g. {"key": "code:register:rahim@example.com", "count": 2, "expires_at": ...}.
+e.g. {"key": "code:register:+8801712345678", "count": 2, "expires_at": ...}.
 Each try adds 1. When the time window ends, the counter starts again from 0.
 """
 from datetime import datetime, timedelta, timezone

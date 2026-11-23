@@ -41,7 +41,7 @@ async def lifespan(app: FastAPI):
 
 # Create the web application. The title and version appear on the /docs page.
 # docs_url=None: we serve our own /docs page (see the bottom of this file).
-app = FastAPI(title=settings.app_name, version="0.5.0", docs_url=None, lifespan=lifespan)
+app = FastAPI(title=settings.app_name, version="0.17.0", docs_url=None, lifespan=lifespan)
 
 # Every error comes back in the same shape: {"error": {"code", "message", "fields"}}
 register_error_handlers(app)
