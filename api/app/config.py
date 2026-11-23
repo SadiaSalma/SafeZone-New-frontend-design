@@ -63,6 +63,11 @@ class Settings(BaseSettings):
     default_alert_radius_m: int = 1000  # how far an alert reaches, unless an area sets its own
     area_data_file: str = "data/dhaka_areas.geojson"  # thanas, wards and police stations to load
 
+    # --- Theft reports (FR-10, Task 14) ---
+    report_max_age_days: int = 30  # only thefts from the last 30 days
+    reports_per_day: int = 5  # at most 5 reports in 24 hours per person
+    gd_max_days_after_theft: int = 7  # a GD filed later than this gets a warning (Task 17)
+
     # Read values from the .env file in the folder where we start the server.
     model_config = SettingsConfigDict(env_file=".env")
 

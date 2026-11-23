@@ -11,6 +11,7 @@ import sys
 
 from app.config import settings
 from app.db import database_status, get_db
+from app.modules.reports.service import seed_gd_formats
 from app.setup_db import apply_schema
 
 
@@ -25,6 +26,7 @@ def main() -> None:
     print(f"  new collections:     {len(summary['created'])}  {', '.join(summary['created'])}")
     print(f"  updated collections: {len(summary['updated'])}")
     print(f"  indexes checked:     {summary['indexes']}")
+    print(f"  GD formats added:    {seed_gd_formats(db)}")
     print("Done. Open MongoDB Compass at mongodb://127.0.0.1:27018/?directConnection=true to look inside.")
 
 
