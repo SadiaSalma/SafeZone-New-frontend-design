@@ -18,6 +18,7 @@ from app.jobs import alert_worker
 from app.modules.alerts.routes import router as alerts_router
 from app.modules.areas.routes import router as areas_router
 from app.modules.auth.routes import router as auth_router
+from app.modules.public.routes import router as public_router
 from app.modules.push.routes import router as push_router
 from app.modules.reports.routes import router as reports_router
 from app.modules.review.routes import router as review_router
@@ -62,6 +63,7 @@ app.include_router(review_router)  # /api/v1/review (Task 18, verifiers)
 app.include_router(simulator_router)  # /api/v1/admin/simulator (Task 21)
 app.include_router(alerts_router)  # /api/v1/admin/alerts (Task 22)
 app.include_router(push_router)  # /api/v1/push (Task 23)
+app.include_router(public_router)  # /api/v1/public (Task 25, no log-in)
 
 
 @app.get("/api/v1/health")
