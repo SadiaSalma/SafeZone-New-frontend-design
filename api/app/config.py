@@ -77,6 +77,12 @@ class Settings(BaseSettings):
     # --- Review (Task 18) ---
     claim_minutes: int = 15  # FR-14: opening a report holds it for this verifier for 15 minutes
 
+    # --- Simulated phone network (Task 21, Design Revisions R10) ---
+    simulator_phones: int = 5000  # how many virtual phones to place around Dhaka
+    tower_spacing_m: int = 800  # distance between neighbouring towers
+    tower_range_m: int = 1000  # how far one tower reaches
+    simulator_seed: int = 42  # same seed -> same network every time (useful for demos and tests)
+
     # Read values from the .env file in the folder where we start the server.
     model_config = SettingsConfigDict(env_file=".env")
 
