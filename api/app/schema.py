@@ -67,13 +67,12 @@ COLLECTIONS: dict[str, dict] = {
     # ===== Accounts =====
     "users": {
         "validator": rules(
-            ["name_en", "phone", "email", "password_hash", "role", "status", "created_at"],
+            ["name_en", "phone", "password_hash", "role", "status", "created_at"],
             {
                 "name_en": STRING,
                 "name_bn": STRING,
                 "phone": {"bsonType": "string", "pattern": r"^(\+8801\d{9}|deleted:.+)$"},  # +8801XXXXXXXXX
-                "email": STRING,  # R1: codes are sent by email
-                "email_verified_at": DATE_OR_NULL,
+                "phone_verified_at": DATE_OR_NULL,  # when the SMS code was confirmed
                 "password_hash": STRING,  # Argon2 hash, never the real password
                 "role": one_of("victim", "verifier", "admin"),
                 "status": one_of("pending_verify", "active", "suspended", "deleted"),
@@ -89,7 +88,6 @@ COLLECTIONS: dict[str, dict] = {
         ),
         "indexes": [
             ({"phone": 1}, {"unique": True, "name": "phone_unique"}),
-            ({"email": 1}, {"unique": True, "name": "email_unique"}),
             # One NID = one account (only for users who have added an NID)
             ({"nid_hash": 1}, {"unique": True, "partialFilterExpression": {"nid_hash": {"$type": "string"}},
                                "name": "one_account_per_nid"}),
@@ -99,8 +97,8 @@ COLLECTIONS: dict[str, dict] = {
         "validator": rules(
             ["target", "channel", "purpose", "code_hash", "attempts", "expires_at"],
             {
-                "target": STRING,  # the email address (or phone) the code was sent to
-                "channel": one_of("console", "email", "demo_screen"),  # R1
+                "target": STRING,  # the mobile number the code was sent to (+8801XXXXXXXXX)
+                "channel": one_of("demo_screen", "console", "sms"),
                 "purpose": one_of("register", "reset", "delete"),
                 "code_hash": STRING,
                 "attempts": WHOLE_NUMBER,
@@ -349,3 +347,8 @@ COLLECTIONS: dict[str, dict] = {
         ],
     },
 }
+
+
+# ---------- Things that were removed (setup_db.py cleans them out of older databases) ----------
+# Codes used to be emailed (revision R1). Now they go to the mobile number, so accounts have no email.
+RETIRED_INDEXES = {"users": ["email_unique"]}

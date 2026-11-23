@@ -21,21 +21,19 @@ class Settings(BaseSettings):
     mongodb_uri: str = "mongodb://127.0.0.1:27018/?replicaSet=rs0"
     mongodb_db: str = "safezone"
 
-    # --- One-time codes (Design Revisions R1) ---
+    # --- One-time codes, sent to the MOBILE NUMBER ---
     # How codes reach people:
-    #   "console"     - printed in the backend window (development only, free)
-    #   "email"       - sent by email through the SMTP settings below
-    #   "demo_screen" - shown on screen, for the teacher demo (development only)
-    otp_channel: str = "console"
+    #   "demo_screen" - shown on the website in a "Demo SMS" box + printed in the backend (development only, free)
+    #   "console"     - printed in the backend window only (development only, free)
+    #   "sms"         - a real SMS through BulkSMSBD (needs the SMS settings below; costs about 0.25-0.35 Tk/SMS)
+    otp_channel: str = "demo_screen"
     otp_secret: str = "dev-only-change-me"  # used to scramble codes before saving them
     otp_minutes: int = 10  # how long a code stays valid
 
-    # Email server (only needed when otp_channel = "email"), e.g. Gmail with an app password
-    smtp_host: str = ""
-    smtp_port: int = 587
-    smtp_user: str = ""
-    smtp_password: str = ""
-    smtp_from: str = ""
+    # SMS company (only needed when otp_channel = "sms"): BulkSMSBD, https://bulksmsbd.net
+    sms_api_url: str = "https://bulksmsbd.net/api/smsapi"
+    sms_api_key: str = ""  # from the BulkSMSBD dashboard - keep it secret
+    sms_sender_id: str = ""  # the approved sender ID / number shown on the SMS
 
     # --- Log-in "tickets" (design doc 5.1 and Section 9) ---
     jwt_secret: str = "dev-only-change-me-to-a-long-random-text"  # signs the short ticket

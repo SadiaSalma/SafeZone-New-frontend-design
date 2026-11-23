@@ -67,41 +67,41 @@ def fresh_limits():
         get_db()["rate_counters"].delete_many({})
 
 
-def logged_in_client(capsys, phone, email):
+def logged_in_client(capsys, phone):
     """Sign up + confirm the code -> a client that is logged in."""
     client = TestClient(app)
     capsys.readouterr()
     client.post("/api/v1/auth/register", headers=SAFE,
-                json={"name_en": "Nila Akter", "phone": phone, "email": email, "password": "safe-pass-123"})
-    code = re.search(r"-> (\d{6})", capsys.readouterr().out).group(1)
-    assert client.post("/api/v1/auth/verify-otp", json={"email": email, "code": code}, headers=SAFE).status_code == 200
+                json={"name_en": "Nila Akter", "phone": phone, "password": "safe-pass-123"})
+    code = re.search(r"code: (\d{6})", capsys.readouterr().out).group(1)
+    assert client.post("/api/v1/auth/verify-otp", json={"phone": phone, "code": code}, headers=SAFE).status_code == 200
     return client
 
 
 @needs_database
 def test_new_accounts_have_no_nid_yet(db, capsys):
-    client = logged_in_client(capsys, "01511110001", "nid1@example.com")
+    client = logged_in_client(capsys, "01511110001")
     me = client.get("/api/v1/me").json()
     assert me["nid_added"] is False and me["nid_last4"] is None
 
 
 @needs_database
 def test_add_nid_stores_only_a_scrambled_copy(db, capsys):
-    client = logged_in_client(capsys, "01511110002", "nid2@example.com")
+    client = logged_in_client(capsys, "01511110002")
     response = client.post("/api/v1/me/nid", json={"nid": "1234 567 890"}, headers=SAFE)
     assert response.status_code == 200
     assert response.json()["nid_added"] is True
     assert response.json()["nid_last4"] == "7890"
 
-    user = db.users.find_one({"email": "nid2@example.com"})
+    user = db.users.find_one({"phone": "+8801511110002"})
     assert user["nid_hash"] == hash_nid("1234567890")
     assert "1234567890" not in str(user)  # the full number is nowhere in the database
 
 
 @needs_database
 def test_one_nid_one_account(db, capsys):
-    first = logged_in_client(capsys, "01511110003", "nid3@example.com")
-    second = logged_in_client(capsys, "01511110004", "nid4@example.com")
+    first = logged_in_client(capsys, "01511110003")
+    second = logged_in_client(capsys, "01511110004")
     assert first.post("/api/v1/me/nid", json={"nid": "5555555555"}, headers=SAFE).status_code == 200
     taken = second.post("/api/v1/me/nid", json={"nid": "5555555555"}, headers=SAFE)
     assert taken.status_code == 409
@@ -110,7 +110,7 @@ def test_one_nid_one_account(db, capsys):
 
 @needs_database
 def test_nid_cannot_be_changed_by_the_user(db, capsys):
-    client = logged_in_client(capsys, "01511110005", "nid5@example.com")
+    client = logged_in_client(capsys, "01511110005")
     assert client.post("/api/v1/me/nid", json={"nid": "1111111111"}, headers=SAFE).status_code == 200
     again = client.post("/api/v1/me/nid", json={"nid": "2222222222"}, headers=SAFE)
     assert again.status_code == 409
@@ -119,7 +119,7 @@ def test_nid_cannot_be_changed_by_the_user(db, capsys):
 
 @needs_database
 def test_bad_nid_format_is_explained(db, capsys):
-    client = logged_in_client(capsys, "01511110006", "nid6@example.com")
+    client = logged_in_client(capsys, "01511110006")
     response = client.post("/api/v1/me/nid", json={"nid": "12345"}, headers=SAFE)
     assert response.status_code == 422
     assert response.json()["error"]["fields"]["nid"] == "Enter your NID number: 10, 13 or 17 digits."

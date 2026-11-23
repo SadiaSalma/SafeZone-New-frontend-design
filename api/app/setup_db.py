@@ -7,13 +7,16 @@ For each collection in schema.py it:
   2. creates every index (if an index with the same name exists but is
      different, it is replaced).
 
+  3. removes what is no longer used (RETIRED_INDEXES, and the old email fields: codes now go to
+     the mobile number, so accounts have no email any more).
+
 It is SAFE TO RUN AGAIN: things that are already correct are left alone.
 Used by scripts/init_db.py and by the tests.
 """
 from pymongo.database import Database
 from pymongo.errors import OperationFailure
 
-from app.schema import COLLECTIONS
+from app.schema import COLLECTIONS, RETIRED_INDEXES
 
 # MongoDB error codes meaning "an index with this name/keys exists but is different"
 INDEX_CONFLICT_CODES = {85, 86}
@@ -45,4 +48,21 @@ def apply_schema(db: Database) -> dict:
                 db[name].create_index(key_list, **options)
             summary["indexes"] += 1
 
+    _remove_retired(db)
     return summary
+
+
+def _remove_retired(db: Database) -> None:
+    """Clean an older database: drop retired indexes and the email fields of accounts."""
+    for name, indexes in RETIRED_INDEXES.items():
+        present = set(db[name].index_information())
+        for index in indexes:
+            if index in present:
+                db[name].drop_index(index)
+    # Accounts made when codes were emailed: keep when they were confirmed, forget the email address
+    db.users.update_many({"$or": [{"email": {"$exists": True}}, {"email_verified_at": {"$exists": True}}]}, [
+        {"$set": {"phone_verified_at": {"$ifNull": ["$phone_verified_at", "$email_verified_at"]}}},
+        {"$unset": ["email", "email_verified_at"]},
+    ])
+    db.otp_codes.delete_many({"channel": "email"})  # old emailed codes (they expire in minutes anyway)
+    db.otp_codes.delete_many({"target": {"$regex": "@"}})
