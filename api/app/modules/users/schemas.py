@@ -25,6 +25,16 @@ def clean_nid(raw: str) -> str:
     return digits
 
 
+class DeleteRequestIn(BaseModel):
+    """Task 31, step 1: the password proves it is really the owner."""
+    password: str = Field(min_length=1, max_length=200)
+
+
+class DeleteConfirmIn(BaseModel):
+    """Task 31, step 2: the 6-digit code from the SMS."""
+    code: str = Field(pattern=r"^\d{6}$")
+
+
 class NidIn(BaseModel):
     nid: str = Field(examples=["1234567890"])
 
