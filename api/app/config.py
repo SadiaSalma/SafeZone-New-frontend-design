@@ -74,6 +74,9 @@ class Settings(BaseSettings):
     photo_max_side: int = 1600  # photos are shrunk so the longest side is at most this many pixels
     item_photos_per_report: int = 3  # FR-8: up to 3 item photos (+ 1 GD copy)
 
+    # --- Review (Task 18) ---
+    claim_minutes: int = 15  # FR-14: opening a report holds it for this verifier for 15 minutes
+
     # Read values from the .env file in the folder where we start the server.
     model_config = SettingsConfigDict(env_file=".env")
 
