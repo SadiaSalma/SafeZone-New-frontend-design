@@ -93,6 +93,17 @@ class Settings(BaseSettings):
     # --- Background jobs (Task 22) ---
     background_jobs: bool = True  # the alert worker; tests switch it off
 
+    # --- Reading GD photos with OCR (Task 29, Design Revisions R10) ---
+    tesseract_cmd: str = ""  # empty = find tesseract.exe automatically (PATH or C:\Program Files\Tesseract-OCR)
+    tessdata_dir: str = ""  # empty = use ~/tessdata if it has ben.traineddata, else Tesseract's own folder
+    ocr_min_confidence: int = 60  # R10: a field is filled only when Tesseract is at least this sure
+    ocr_timeout_seconds: int = 30  # R10: a slower scan is marked failed (the form works without it)
+    ocr_workers: int = 2  # R10: at most 2 photos are read at the same time
+    scan_max_side: int = 2400  # GD photos are kept a little larger than item photos, for reading
+    scans_per_hour: int = 10  # per person
+    scan_keep_hours: int = 24  # a scan that never became part of a report is deleted after this
+    scan_keep_days_after_decision: int = 30  # R8: GD photos are deleted 30 days after the decision
+
     # Read values from the .env file in the folder where we start the server.
     model_config = SettingsConfigDict(env_file=".env")
 
