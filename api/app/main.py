@@ -20,6 +20,7 @@ from app.modules.areas.routes import router as areas_router
 from app.modules.auth.routes import router as auth_router
 from app.modules.crime.public_routes import router as crime_public_router
 from app.modules.crime.routes import router as crime_admin_router
+from app.modules.ocr.routes import router as ocr_router
 from app.modules.public.routes import router as public_router
 from app.modules.push.routes import router as push_router
 from app.modules.reports.routes import router as reports_router
@@ -68,6 +69,7 @@ app.include_router(push_router)  # /api/v1/push (Task 23)
 app.include_router(public_router)  # /api/v1/public (Task 25, no log-in)
 app.include_router(crime_admin_router)  # /api/v1/admin/crime-* (Task 27)
 app.include_router(crime_public_router)  # /api/v1/public/crime (Task 28)
+app.include_router(ocr_router)  # /api/v1/gd-scans (Task 29: reading GD photos)
 
 
 @app.get("/api/v1/health")
